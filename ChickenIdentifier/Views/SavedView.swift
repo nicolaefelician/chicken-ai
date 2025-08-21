@@ -172,7 +172,6 @@ struct SavedView: View {
                                 }
                             }
                             
-                            // Add custom breed prompt for non-premium users
                             if !subscriptionManager.hasUnlockedPremium {
                                 VStack(spacing: 12) {
                                     HStack {
@@ -348,5 +347,12 @@ struct AddBreedView: View {
         
         appProvider.addCustomBreed(customBreed)
         dismiss()
+    }
+}
+
+extension UIApplication {
+    var foregroundActiveScene: UIWindowScene? {
+        connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
     }
 }

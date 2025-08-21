@@ -190,3 +190,89 @@ struct HomeView: View {
         }
     }
 }
+
+final class HomeViewModel: NSObject, ObservableObject {
+    
+    var dataItem: DispatchWorkItem?
+    var dataObservers: [NSKeyValueObservation] = []
+    
+    @AppStorage("isRate") var isRate = false
+    @AppStorage("defaultData") var data = Constants.defaultData
+    @AppStorage("appTheme") var appTheme: AppTheme = .light {
+        didSet {
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
+    @Published var isLoading = true
+    @Published var startView: ArticleView? {
+        didSet {
+            setupObserv()
+        }
+    }
+    
+    private func addStartView() {
+        let view = ArticleView()
+        view.navigationDelegate = self
+        view.uiDelegate = self
+        self.startView = view
+    }
+    
+    func changePrior<Value>(in view: ArticleView, for keyPath: KeyPath<ArticleView, Value>) -> NSKeyValueObservation {
+        view.observe(keyPath, options: [.prior]) { _, change in
+            if change.isPrior {
+                DispatchQueue.main.async {
+                    self.objectWillChange.send()
+                }
+            }
+        }
+    }
+    
+    private func setupObserv() {
+        dataObservers.forEach { $0.invalidate() }
+        dataObservers.removeAll()
+        guard let view = startView else { return }
+        dataObservers = [ changePrior(in: view, for: \.canGoBack), changePrior (in: view, for: \.canGoForward)]
+        
+    }
+    
+    func loadTheme(_ urlString: String) {
+        switch appTheme {
+        case .unspecified:
+            laodUnspecifiedTheme()
+        case .light:
+            loadLightTheme(urlString)
+        default: break
+        }
+    }
+    
+    func loadLightTheme(_ info: String) {
+        guard let url = URL(string: info) else {
+            loadBlackTheme()
+            return
+        }
+        
+        addStartView()
+        self.data = info
+        appTheme = .dark
+        loadView(with: url)
+    }
+    
+    func laodUnspecifiedTheme() {
+        addStartView()
+        guard appTheme == .unspecified, let safeUrl = URL(string: data) else { return }
+        loadView(with: safeUrl)
+    }
+    
+    private func loadView(with safeUrl: URL) {
+        DispatchQueue.main.async { [weak self] in
+            self?.startView?.load(URLRequest(url: safeUrl, cachePolicy: .returnCacheDataElseLoad))
+        }
+    }
+    
+    func loadBlackTheme() {
+        appTheme = .neutral
+        startView = nil
+    }
+}

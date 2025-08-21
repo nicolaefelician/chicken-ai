@@ -341,3 +341,64 @@ struct PremiumBreedPromptCard: View {
         .shadow(color: .orange.opacity(0.2), radius: 10, y: 5)
     }
 }
+
+struct EntryScreen: View {
+    
+    @AppStorage("selectedTheme") private var selectedTheme = "System"
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @StateObject private var appProvider = AppProvider.shared
+    
+    @EnvironmentObject var startVM: HomeViewModel
+    
+    @State private var isAnimating = false
+    
+    var body: some View {
+        if startVM.isLoading {
+            preloader
+        } else {
+            main
+        }
+    }
+    
+    private var main: some View {
+        VStack {
+            if startVM.appTheme == .unspecified {
+                ConfigurationScreen()
+                    .environmentObject(startVM)
+            } else {
+                SplashScreenView()
+                    .environmentObject(subscriptionManager)
+                    .environmentObject(appProvider)
+                    .onAppear {
+                        applyTheme()
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                        Task {
+                            appProvider.syncPremiumStatus()
+                        }
+                    }
+            }
+        }
+    }
+    
+    private var preloader: some View {
+        SplashView(isAnimating: $isAnimating, loadingText: .constant("Loading..."))
+            .onAppear {
+                isAnimating = true
+            }
+    }
+    
+    private func applyTheme() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else { return }
+        
+        switch selectedTheme {
+        case "Light":
+            window.overrideUserInterfaceStyle = .light
+        case "Dark":
+            window.overrideUserInterfaceStyle = .dark
+        default:
+            window.overrideUserInterfaceStyle = .unspecified
+        }
+    }
+}

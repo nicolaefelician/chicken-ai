@@ -133,7 +133,6 @@ class SubscriptionManager: ObservableObject {
             print("📢 Premium status changed from \(previousStatus) to \(hasUnlockedPremium)")
         }
         
-        // Check subscription status for purchased products
         if let purchasedProduct = subscriptions.first(where: { purchasedSubscriptions.contains($0) }) {
             if let status = try? await purchasedProduct.subscription?.status {
                 if let renewalInfo = status.first {
@@ -155,8 +154,6 @@ class SubscriptionManager: ObservableObject {
     
     @MainActor
     func refreshStatusIfNeeded() async {
-        // Only refresh if we haven't checked in a while or after a purchase
-        // This prevents excessive API calls
         await updateCustomerProductStatus()
     }
     

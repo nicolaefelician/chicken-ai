@@ -187,14 +187,11 @@ struct IdentifyView: View {
     }
     
     private func captureAndIdentify() {
-        // Check subscription status first
         if !subscriptionManager.hasUnlockedPremium {
-            // Show paywall for non-premium users
             showPaywall = true
             return
         }
         
-        // Premium users can proceed with identification
         cameraHandler.isProcessing = true
         cameraHandler.capturePhoto()
         

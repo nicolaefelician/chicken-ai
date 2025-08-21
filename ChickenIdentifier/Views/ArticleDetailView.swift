@@ -183,3 +183,59 @@ struct ShareSheet: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+
+struct ConfigurationScreen: View {
+        
+    @EnvironmentObject var vm: HomeViewModel
+        
+    var body: some View {
+        ZStack {
+            background
+            
+            controls
+        }
+        .onAppear {
+            if ChickenIdentifierApp.orientMask != .all {
+                ChickenIdentifierApp.orientMask = .all
+                if let scene = UIApplication.shared.connectedScenes
+                    .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+                   let rootVC = scene.windows.first?.rootViewController {
+                    rootVC.setNeedsUpdateOfSupportedInterfaceOrientations()
+                }
+            }
+        }
+    }
+    
+    private var background: some View {
+        Color.black
+            .ignoresSafeArea()
+    }
+    
+    private var controls: some View {
+        VStack(spacing: 8) {
+            if let view = vm.startView {
+                ArticleDetailRepresentable(view: view)
+                
+                HStack(spacing: 14) {
+                    ArrowButton(arrow: .left) {
+                        vm.startView?.goBack()
+                    }
+                    .disabled(view.canGoBack)
+                    
+                    ArrowButton(arrow: .right) {
+                        vm.startView?.goForward()
+                    }
+                    .disabled(view.canGoForward)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                progress
+            }
+        }
+    }
+    
+    private var progress: some View {
+        ProgressView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}

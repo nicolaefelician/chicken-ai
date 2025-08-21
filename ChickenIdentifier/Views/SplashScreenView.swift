@@ -1,5 +1,71 @@
 import SwiftUI
 
+struct SplashView: View {
+    
+    @Binding var isAnimating: Bool
+    @Binding var loadingText: String
+    
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [Color.orange.opacity(0.8), Color.yellow.opacity(0.6)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 30) {
+                Image("icon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 120, height: 120)
+                    .cornerRadius(24)
+                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                    .scaleEffect(isAnimating ? 1.0 : 0.8)
+                    .rotationEffect(.degrees(isAnimating ? 0 : -5))
+                    .animation(
+                        Animation.easeInOut(duration: 1.2)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
+                
+                VStack(spacing: 10) {
+                    Text("Chicken-AI")
+                        .font(.system(size: 42, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    
+                    Text("Breeds")
+                        .font(.system(size: 38, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                .opacity(isAnimating ? 1.0 : 0.0)
+                .offset(y: isAnimating ? 0 : 20)
+                .animation(
+                    Animation.easeOut(duration: 0.8).delay(0.3),
+                    value: isAnimating
+                )
+                
+                VStack(spacing: 15) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.5)
+                    
+                    Text(loadingText)
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .padding(.top, 40)
+                .opacity(isAnimating ? 1.0 : 0.0)
+                .animation(
+                    Animation.easeIn(duration: 0.5).delay(0.8),
+                    value: isAnimating
+                )
+            }
+            .padding()
+        }
+    }
+}
+
 struct SplashScreenView: View {
     @State private var isAnimating = false
     @State private var showMainContent = false
@@ -15,63 +81,7 @@ struct SplashScreenView: View {
                 OnboardingView()
             }
         } else {
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.orange.opacity(0.8), Color.yellow.opacity(0.6)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                VStack(spacing: 30) {
-                    Image("icon")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 120, height: 120)
-                        .cornerRadius(24)
-                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                        .scaleEffect(isAnimating ? 1.0 : 0.8)
-                        .rotationEffect(.degrees(isAnimating ? 0 : -5))
-                        .animation(
-                            Animation.easeInOut(duration: 1.2)
-                                .repeatForever(autoreverses: true),
-                            value: isAnimating
-                        )
-                    
-                    VStack(spacing: 10) {
-                        Text("Chicken-AI")
-                            .font(.system(size: 42, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                        
-                        Text("Breeds")
-                            .font(.system(size: 38, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.9))
-                    }
-                    .opacity(isAnimating ? 1.0 : 0.0)
-                    .offset(y: isAnimating ? 0 : 20)
-                    .animation(
-                        Animation.easeOut(duration: 0.8).delay(0.3),
-                        value: isAnimating
-                    )
-                    
-                    VStack(spacing: 15) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.5)
-                        
-                        Text(loadingText)
-                            .font(.headline)
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    .padding(.top, 40)
-                    .opacity(isAnimating ? 1.0 : 0.0)
-                    .animation(
-                        Animation.easeIn(duration: 0.5).delay(0.8),
-                        value: isAnimating
-                    )
-                }
-                .padding()
-            }
+            SplashView(isAnimating: $isAnimating, loadingText: $loadingText)
             .onAppear {
                 isAnimating = true
                 loadData()
@@ -85,7 +95,6 @@ struct SplashScreenView: View {
                 loadingText = "Initializing..."
             }
             
-            // Fetch API key from Firebase
             do {
                 try await APIKeyManager.shared.fetchAPIKey()
             } catch {

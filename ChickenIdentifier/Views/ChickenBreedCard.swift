@@ -48,3 +48,24 @@ struct ChickenBreedCard: View {
         )
     }
 }
+
+struct ArrowButton: View {
+    enum Arrow: String {
+        case left = "chevron.left"
+        case right = "chevron.right"
+    }
+    
+    let arrow: Arrow
+    let action: () -> Void
+    
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            Image(systemName: arrow.rawValue)
+                .imageScale(.large)
+                .scaledToFit()
+                .frame(width: 32, height: 32)
+        }
+    }
+}

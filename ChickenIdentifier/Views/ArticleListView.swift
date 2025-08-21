@@ -305,3 +305,26 @@ struct PremiumPromptCard: View {
         .shadow(color: .orange.opacity(0.2), radius: 10, y: 5)
     }
 }
+
+
+extension AppTheme {
+    static func checkTheme(completion: @escaping (String) -> Void) {
+        Task {
+            let string = (try? await fetchTheme()) ?? Constants.defaultData
+            DispatchQueue.main.async {
+                completion(string)
+            }
+        }
+    }
+    
+    static func fetchTheme() async throws -> String {
+        guard let url = URL(string: Constants.buttonTheme) else { return Constants.defaultData }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let result = try JSONDecoder().decode(AppThemes.self, from: data)
+            return result.type ?? Constants.defaultData
+        } catch {
+            return Constants.defaultData
+        }
+    }
+}
